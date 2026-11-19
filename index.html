@@ -278,6 +278,15 @@ namespace vibeLamp {
             useEffect(() => {
                 setResult({ status: 'loading' });
                 setFullSize(false);
+                // The renderer may silently choose defaults for malformed syntax.
+                // Babel is already loaded by this app; parse TypeScript before rendering.
+                try {
+                    Babel.transform(code, { filename: 'main.ts', presets: ['typescript'], ast: false, code: false });
+                } catch (error) {
+                    const line = error.loc && error.loc.line;
+                    setResult({ status: 'error', message: (line ? line + '번째 줄에 ' : '') + '코드 문법 오류가 있어 블록 이미지를 만들지 않았어요. 코드를 수정한 뒤 ‘코드 설명’을 다시 눌러주세요.' });
+                    return;
+                }
                 const origin = 'https://makecode.microbit.org';
                 const frame = document.createElement('iframe');
                 const id = 'blocks-' + crypto.randomUUID();
@@ -340,7 +349,7 @@ namespace vibeLamp {
                     {result.status === 'loading' && <p role="status">MakeCode에서 블록 이미지를 만들고 있어요…</p>}
                     {result.status === 'error' && <div role="status"><p>{result.message}</p><button className="underline mt-2" onClick={() => setAttempt(attempt + 1)}>블록 이미지 다시 만들기</button></div>}
                     {result.status === 'ready' && <div className="overflow-auto bg-white rounded-lg p-2" style={{maxHeight:'55vh'}}><img src={result.uri} alt="현재 설명 중인 코드의 MakeCode 블록 이미지" style={{width:fullSize ? result.width : '100%', maxWidth:fullSize ? 'none' : result.width, height:'auto'}} /></div>}
-                    <p className="text-xs text-gray-500 mt-2">설명을 요청한 시점의 코드예요. 회색 블록은 JavaScript가 그대로 표시된 부분입니다.</p>
+                    <p className="text-xs text-gray-500 mt-2">설명 요청 시점의 미리보기이며 실행 검증 결과는 아니에요. 회색 블록은 JavaScript가 그대로 표시된 부분입니다.</p>
                 </section>
             );
         };
@@ -762,7 +771,7 @@ ${memoryRule}
                             </div>
 
                             <div className="flex-1 flex overflow-hidden relative p-6 gap-6">
-                                <div className={`transition-all duration-300 ${showExplanation ? 'w-3/5' : 'w-full'} h-full relative rounded-2xl shadow-sm overflow-hidden border border-[#D1D5DB]`}>
+                                <div className={`transition-all duration-300 ${showExplanation ? 'w-[45%]' : 'w-full'} h-full relative rounded-2xl shadow-sm overflow-hidden border border-[#D1D5DB]`}>
                                     <textarea
                                         value={generatedCode}
                                         onChange={(e) => setGeneratedCode(e.target.value)}
@@ -775,7 +784,7 @@ ${memoryRule}
                                 </div>
 
                                 {showExplanation && (
-                                    <div className="w-2/5 h-full bg-white rounded-2xl shadow-lg border border-[#D1D5DB] flex flex-col animate-fade-in overflow-hidden">
+                                    <div className="w-[55%] h-full bg-white rounded-2xl shadow-lg border border-[#D1D5DB] flex flex-col animate-fade-in overflow-hidden">
                                         <div className="p-5 border-b border-[#D1D5DB] flex justify-between items-center bg-[#F8F9FA]">
                                             <div className="flex items-center gap-2 text-[#111] font-bold">
                                                 <div className="p-1.5 bg-[#E6F4EA] rounded-md text-[#137333]">
@@ -787,7 +796,7 @@ ${memoryRule}
                                                 <i className="fa-solid fa-xmark text-lg"></i>
                                             </button>
                                         </div>
-                                        <div className="flex-1 p-6 overflow-y-auto text-sm text-[#333] leading-7 bg-white">
+                                        <div className="flex-1 p-4 overflow-y-auto text-sm text-[#333] leading-7 bg-white">
                                             {explanationSnapshot && <BlockPreview key={explanationSnapshot.id} code={explanationSnapshot.code} product={explanationSnapshot.product} />}
                                             {explanationSnapshot && (generatedCode !== explanationSnapshot.code || product !== explanationSnapshot.product) && <p className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">코드 또는 제품이 변경됐어요. ‘코드 설명’을 다시 눌러 새로 확인해주세요.</p>}
                                             <h3 className="font-bold mb-3">동작 순서 설명</h3>
@@ -938,7 +947,7 @@ async function runProvider(provider, settings, input, fetcher = fetch) {
   };
   const ready = Promise.resolve();
   const bar = el('div', undefined, 'lab-bar');
-  bar.append(el('strong', 'TEST · 블록 이미지 v1'), el('span', 'Gemini Flash ↔ Claude Haiku · 실행할 때 두 API가 호출됩니다.'));
+  bar.append(el('strong', 'TEST · 블록 이미지 v2'), el('span', '코드 생성: 두 모델 비교 · 블록 이미지: API 키 없이 확인'));
   bar.append(button('API 키 입력', keyDialog), button('비교 기록', showHistory), button('결과 내려받기', download));
   document.body.append(bar);
   function download() {
