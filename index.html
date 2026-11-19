@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바이브코딩 스튜디오 · 모델 비교 테스트</title>
+
+    <link rel="icon" href="https://raw.githubusercontent.com/boundary-x/ai_teachable_machine/refs/heads/main/Favicon.png"/>
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <script src="https://unpkg.com/@babel/standalone@7.24.4/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --font-main: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+        }
+        body, #root, .font-sans, button, input, textarea, select { 
+            font-family: var(--font-main) !important; 
+        }
+        .code-font { 
+            font-family: 'JetBrains Mono', monospace !important; 
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        .bx-pill-btn {
+            transition: all 0.2s;
+            border-radius: 50px; 
+            font-weight: 600;
+        }
+        .bx-btn-black {
+            background-color: #000;
+            color: #fff;
+        }
+        .bx-btn-black:hover {
+            background-color: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .bx-btn-outline {
+            background-color: #fff;
+            color: #111;
+            border: 1px solid #D1D5DB;
+        }
+        .bx-btn-outline:hover {
+            background-color: #F8F9FA;
+            border-color: #000;
+        }
+        .bx-btn-danger-outline {
+            background-color: #fff;
+            color: #EA4335;
+            border: 1px solid #D1D5DB;
+        }
+        .bx-btn-danger-outline:hover {
+            background-color: #FFF5F5;
+            border-color: #EA4335;
+        }
+        ::selection { background: #000; color: #fff; }
+    </style>
+<style>.lab-bar{height:76px;position:fixed;inset:0 0 auto;z-index:1000;background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:10px 18px;display:flex;gap:14px;align-items:center;font:13px system-ui;color:#172554;flex-wrap:wrap}
+body{padding-top:76px!important}#root>div{height:calc(100vh - 76px)!important}
+.lab-bar button,.lab-dialog button{border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:8px 12px;color:#172554;cursor:pointer;font-weight:600}
+.lab-bar button:hover,.lab-dialog button:hover{background:#dbeafe}
+.lab-dialog{width:min(1400px,96vw);max-height:92vh;border:1px solid #cbd5e1;border-radius:16px;padding:24px;color:#172554;background:#f8fafc;font:14px/1.6 system-ui;overflow:auto}
+.lab-dialog::backdrop{background:#0f172a99}.lab-dialog h2{font-size:22px;font-weight:750;margin:0 0 10px}.lab-dialog h3{font-size:18px;font-weight:700}.lab-dialog p{margin:8px 0}.lab-dialog>button{margin:12px 8px 0 0}
+.lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.lab-card{min-width:0;background:white;border:1px solid #cbd5e1;border-radius:12px;padding:18px}.lab-card pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px;font:13px/1.65 monospace;margin:12px 0}.lab-card label{display:block;margin:10px 0}.lab-card select{padding:5px;border:1px solid #cbd5e1;border-radius:5px}.lab-card textarea{width:100%;min-height:75px;border:1px solid #cbd5e1;border-radius:8px;padding:8px;display:block;margin:12px 0}.lab-error{color:#b91c1c}.lab-card small{color:#64748b}
+@media(max-width:800px){.lab-grid{grid-template-columns:1fr}.lab-bar{height:110px}body{padding-top:110px!important}#root>div{height:calc(100vh - 110px)!important}}
+
+
+.lab-dialog>label{display:block;margin:16px 0}.lab-dialog input{display:block;width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px}
+</style></head>
+<body class="overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react,env">
+        const { useState, useEffect, useRef } = React;
+
+        // =========================================================================
+        // 1. AI 포니봇 확장블록 정의
+        // =========================================================================
+        const PONYBOT_EXTENSION = `
+declare enum DigitalPin { P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16 }
+
+declare namespace aiPonybot {
+    enum Mecanum { LeftForward = 1, Forward = 2, RightForward = 3, Left = 4, Stop = 5, Right = 6, LeftBackward = 7, Backward = 8, RightBackward = 9 }
+    enum DirectionControl { Forward = 1, Backward = 2, Clockwise = 3, CounterClockwise = 4 }
+    enum Stepper { Stepper42 = 1, Stepper28 = 2 }
+    enum Servo { Servo1 = 1, Servo2 = 2, Servo3 = 3, Servo4 = 4, Servo5 = 5, Servo6 = 6, Servo7 = 7, Servo8 = 8 }
+    enum Motor { Motor1 = 1, Motor2 = 2, Motor3 = 3, Motor4 = 4 }
+    enum Direction { Clockwise = 1, CounterClockwise = -1 }
+    enum StepperPair { Motors1And2 = 1, Motors3And4 = 2 }
+    
+    function servo(index: Servo, degree: number): void;
+    function runMotor(index: Motor, direction: Direction, speed: number): void;
+    function runMecanum(direction: Mecanum, speed: number): void;
+    function stopMotor(index: Motor): void;
+    function stopAllMotors(): void;
+    function runNormal(direction: DirectionControl, speed: number): void;
+    
+    enum TwoLineState { OffOff = 0, OnOn = 1, OnOff = 2, OffOn = 3 }
+    enum LineState { Off = 0, On = 1 }
+    enum LineSensorChannel { Left = 1, Right = 2 }
+    function checkTwoLineState(state: TwoLineState): boolean;
+    function checkSingleLineSensor(channel: LineSensorChannel, state: LineState): boolean;
+    function readLineSensor(channel: LineSensorChannel): number;
+    
+    enum PingUnit { MicroSeconds, Centimeters, Inches }
+    function ping(unit: PingUnit, maxCmDistance?: number): number;
+    
+    enum SensorVersion { V1 = 1, V2 = 2 }
+    enum DetectedColor { Red, Green, Blue, Yellow }
+    function initColorSensor(version: SensorVersion): void;
+    function getLight(): number;
+    function getRed(): number;
+    function getGreen(): number;
+    function getBlue(): number;
+    function isColorAdvanced(color: DetectedColor, threshold?: number): boolean;
+    function isColorInRange(minR: number, maxR: number, minG: number, maxG: number, minB: number, maxB: number): boolean;
+    
+    enum UARTDataType { X, Y, W, H, D }
+    enum ColorDataType { R, G, B, I }
+    enum ReturnFormat { String, Number }
+    function parseUARTUnified(data: string, type: UARTDataType, format: ReturnFormat): any;
+    function parseColorUnified(data: string, color: ColorDataType, format: ReturnFormat): any;
+    
+    enum FaceDataType { X, Y, Z, Yaw, Pitch, Mouth, LeftEye, RightEye, Roll, Smile, Visible }
+    enum HandDataType { LeftDir, LeftSpeed, RightDir, RightSpeed }
+    function parseFaceUnified(data: string, type: FaceDataType): number;
+    function parseHandPoseUnified(data: string, type: HandDataType, format: ReturnFormat): any;
+    
+    enum Display { On = 1, Off = 0 }
+    function invert(on?: boolean): void;
+    function clear(): void;
+    function display(on: boolean): void;
+    function pixel(x: number, y: number, color?: number): void;
+    function showString(text: string, column: number, row: number, color?: number): void;
+    function showNumber(number: number, column: number, row: number, color?: number): void;
+    function printString(text: string, newline?: boolean): void;
+    function printNumber(number: number, newline?: boolean): void;
+    function horizontalLine(x: number, y: number, length: number, color?: number): void;
+    function verticalLine(x: number, y: number, length: number, color?: number): void;
+    function rectangle(x1: number, y1: number, x2: number, y2: number, color?: number): void;
+}
+
+declare namespace neopixel {
+    enum NeoPixelColors { Red = 0xFF0000, Orange = 0xFFA500, Yellow = 0xFFFF00, Green = 0x00FF00, Blue = 0x0000FF, Indigo = 0x000080, Violet = 0x8a2be2, White = 0xFFFFFF, Black = 0x000000 }
+    enum NeoPixelMode { RGB = 1, RGBW = 2, RGB_RGB = 3 }
+    enum HueInterpolationDirection { Clockwise, CounterClockwise, Shortest }
+    class Strip {
+        showColor(rgb: number): void;
+        showRainbow(startHue?: number, endHue?: number): void;
+        showBarGraph(value: number, high: number): void;
+        setPixelColor(pixelOffset: number, rgb: number): void;
+        show(): void;
+        clear(): void;
+        getLength(): number;
+        setBrightness(brightness: number): void;
+        createRange(start: number, length: number): Strip;
+        setPin(pin: DigitalPin): void;
+    }
+    function create(pin: DigitalPin, numLeds: number, mode: NeoPixelMode): Strip;
+    function rgb(red: number, green: number, blue: number): number;
+    function pickColorPackRGB(color: number): number;
+    function getColors(color: NeoPixelColors): number;
+    function hsl(hue: number, saturation: number, luminance: number): number;
+}
+`;
+
+        // =========================================================================
+        // 2. 바이브램프 확장블록 정의
+        // =========================================================================
+        const VIBELAMP_EXTENSION = `
+declare enum DigitalPin { P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16 }
+enum NeoPixelColors {
+    Red = 0xFF0000,
+    Orange = 0xFFA500,
+    Yellow = 0xFFFF00,
+    Green = 0x00FF00,
+    Blue = 0x0000FF,
+    Indigo = 0x000080,
+    Violet = 0x8a2be2,
+    White = 0xFFFFFF,
+    Black = 0x000000
+}
+
+enum NeoPixelMode {
+    RGB = 1,
+    RGBW = 2,
+    RGB_RGB = 3
+}
+
+namespace vibeLamp {
+    function sendBuffer(buf: Buffer, pin: DigitalPin): void;
+
+    export class Strip {
+        buffer: Buffer;
+        pin: DigitalPin;
+        brightness: number;
+        start: number;
+        _length: number;
+        mode: NeoPixelMode;
+        matrixWidth: number;
+        matrixChain: number;
+        matrixRotation: number;
+        _isShowing: boolean;
+
+        showColor(rgb: number): void;
+        clear(): void;
+        setBrightness(brightness: number): void;
+        createRange(start: number, length: number): Strip;
+        show(): void;
+        setPixelColor(pixelOffset: number, rgb: number): void;
+        showRainbow(startHue?: number, endHue?: number): void;
+        showBarGraph(value: number, high: number): void;
+        shift(offset?: number): void;
+        rotate(offset?: number): void;
+        getLength(): number;
+        setMatrixWidth(width: number, rotation: number, chain: number): void;
+        setMatrixColor(x: number, y: number, rgb: number): void;
+        setPin(pin: DigitalPin): void;
+    }
+
+    export function create(pin: DigitalPin, numLeds: number, mode: NeoPixelMode): Strip;
+    export function rgb(red: number, green: number, blue: number): number;
+    export function pickColor(color: number): number;
+    export function colors(color: NeoPixelColors): number;
+    export function hsl(hue: number, saturation: number, luminance: number): number;
+
+    export enum UARTDataType { X, Y, W, H, D }
+    export enum ColorDataType { R, G, B, I }
+    export enum ReturnFormat { String, Number }
+    export enum FaceDataType { X, Y, Z, Yaw, Pitch, Mouth, LeftEye, RightEye, Roll, Smile, Visible }
+    export enum HandDataType { LeftDir, LeftSpeed, RightDir, RightSpeed }
+
+    export function parseUARTUnified(data: string, type: UARTDataType, format: ReturnFormat): any;
+    export function parseColorUnified(data: string, color: ColorDataType, format: ReturnFormat): any;
+    export function parseFaceUnified(data: string, type: FaceDataType): number;
+    export function parseHandPoseUnified(data: string, type: HandDataType, format: ReturnFormat): any;
+
+    export enum Display { On = 1, Off = 0 }
+    
+    export function invert(on?: boolean): void;
+    export function clear(): void;
+    export function display(on: boolean): void;
+    export function pixel(x: number, y: number, color?: number): void;
+    export function showString(text: string, column: number, row: number, color?: number): void;
+    export function showNumber(number: number, column: number, row: number, color?: number): void;
+    export function printString(text: string, newline?: boolean): void;
+    export function printNumber(number: number, newline?: boolean): void;
+    export function horizontalLine(x: number, y: number, length: number, color?: number): void;
+    export function verticalLine(x: number, y: number, length: number, color?: number): void;
+    export function rectangle(x1: number, y1: number, x2: number, y2: number, color?: number): void;
+}
+`;
+
+        // =========================================================================
+        // 🚀 [필수 설정] 백엔드(Cloud Functions) 접속 URL
+        // 구글 클라우드에서 배포 완료 후 받은 긴 URL을 아래 따옴표 안에 붙여넣으세요.
+        // =========================================================================
+        const App = () => {
+            // 접속키 상태 관리로 변경 (apiKey -> accessKey)
+
+
+            
+            // 제품 상태 (ponybot / vibelamp)
+            const [product, setProduct] = useState('ponybot');
+            
+            // 프롬프트 모드 상태 (new / improve / fix)
+            const [promptMode, setPromptMode] = useState('new');
+
+            const [messages, setMessages] = useState([]);
+            const [input, setInput] = useState('');
+            const [generatedCode, setGeneratedCode] = useState('// 여기에 AI가 생성한 코드가 나타납니다.');
+            const [isLoading, setIsLoading] = useState(false);
+            const [copySuccess, setCopySuccess] = useState(false);
+            
+            const [showExplanation, setShowExplanation] = useState(false);
+            const [explanationText, setExplanationText] = useState('');
+            const [isExplaining, setIsExplaining] = useState(false);
+
+            const messagesEndRef = useRef(null);
+
+            // 초기 인사말 설정 (제품 전환 시 변경)
+            useEffect(() => {
+                const productName = product === 'ponybot' ? 'AI 포니봇' : '바이브램프';
+                setMessages([
+                    { 
+                        role: 'assistant', 
+                        text: `안녕하세요! ${productName} 바이브코딩 스튜디오에 오신 것을 환영합니다.\n무엇을 코딩해 드릴까요?\n\n시작 전 상단의 API 키 입력 버튼에서 두 업체의 API 키를 입력하세요. 같은 요청으로 두 결과를 비교합니다.` 
+                    }
+                ]);
+                setGeneratedCode('// 여기에 AI가 생성한 코드가 나타납니다.');
+                setPromptMode('new');
+                setInput('');
+            }, [product]);
+
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            };
+            useEffect(scrollToBottom, [messages]);
+
+            // Placeholder 동적 설정
+            const getPlaceholder = () => {
+                if (promptMode === 'new') return "새로운 코드를 어떻게 짤지 설명하세요...";
+                if (promptMode === 'improve') return "현재 코드를 어떻게 발전시키고 싶나요? (예: 후진 기능 추가해줘)";
+                if (promptMode === 'fix') return "어떤 문제가 발생했나요? (예: A버튼을 눌러도 불이 안 켜져)";
+                return "";
+            };
+
+            // --- AI Logic (백엔드 프록시 통신으로 변경) ---
+            const callGemini = async (prompt, systemInstruction) => {
+                return window.ComparisonLab.generate(prompt, systemInstruction, { product, mode: promptMode });
+            };
+
+            const generateCode = async () => {
+                if (isLoading || isExplaining || !input.trim()) return;
+
+
+                
+                const userQuery = input;
+                setInput('');
+                
+                let modeLabel = "";
+                if (promptMode === 'improve') modeLabel = "[코드 개선] ";
+                if (promptMode === 'fix') modeLabel = "[에러 해결] ";
+                setMessages(prev => [...prev, { role: 'user', text: modeLabel + userQuery }]);
+                setIsLoading(true);
+
+                // ================== 동적 시스템 프롬프트 조립 ==================
+                const isPonybot = product === 'ponybot';
+                
+                // 1. 선언부
+                const extensionSrc = isPonybot ? PONYBOT_EXTENSION : VIBELAMP_EXTENSION;
+                const robotName = isPonybot ? "AI Ponybot" : "Vibe Lamp";
+                
+                // 2. 라이트 초기화 코드
+                const initRule = isPonybot 
+                    ? `- [🚨 CRITICAL] Initialize it ONCE at the top level exactly like this: \`let strip = neopixel.create(DigitalPin.P8, 4, NeoPixelMode.RGB)\``
+                    : `- [🚨 CRITICAL] Initialize it ONCE at the top level exactly like this: \`let strip = vibeLamp.create(DigitalPin.P8, 12, NeoPixelMode.RGB)\``;
+                
+                // 3. 색상 강제 규칙
+                const colorRule = isPonybot
+                    ? `- [🚨 CRITICAL COLOR OVERRIDE] You MUST use \`neopixel.getColors(NeoPixelColors.Red)\` to get a color value. NEVER use \`neopixel.colors(...)\`. Example: \`strip.showColor(neopixel.getColors(NeoPixelColors.Red))\``
+                    : `- [🚨 CRITICAL COLOR OVERRIDE] You MUST use \`vibeLamp.colors(NeoPixelColors.Red)\` to get a color value. NEVER use \`vibeLamp.getColors(...)\`. Example: \`strip.showColor(vibeLamp.colors(NeoPixelColors.Red))\``;
+
+                // 4. OLED 및 매트릭스 LED 규칙
+                const matrixRule = isPonybot
+                    ? `- If the user asks to display basic shapes like "LED", "아이콘", "하트", use the Micro:bit's built-in 5x5 LED matrix (e.g., \`basic.showIcon(...)\`).\n   - If the user asks for "포니봇 LED", "네오픽셀", use the \`neopixel\` extension.\n   - If the user asks for "OLED", "화면", "디스플레이", "글자 출력", you MUST use \`aiPonybot.showString(...)\` or \`aiPonybot.showNumber(...)\`.`
+                    : `- If the user asks for "화면", "디스플레이", "글자 출력", you MUST use \`vibeLamp.showString(...)\` or \`vibeLamp.showNumber(...)\`.\n   - If the user asks for "라이트", "네오픽셀", you MUST use \`strip.showColor(...)\` or \`strip.showRainbow(...)\`.`;
+
+                // 5. 메모리 최적화 및 070 에러 방어 규칙 (바이브램프 전용 분기)
+                const memoryRule = isPonybot
+                    ? `11. **DATA TYPE & PARSING:**\n    - MakeCode is statically typed. Never change a variable's data type after initialization.\n    - When handling UART or serial communication data (e.g., \`parseUARTUnified\`), always ensure to check if the string is not empty before parsing.`
+                    : `11. **[🚨 CRITICAL] HARDWARE MEMORY & 070 ERROR PREVENTION (VIBE LAMP ONLY):**
+                    - [🚨 3-COMBO BAN] You are STRICTLY FORBIDDEN from using NeoPixel, Bluetooth, and OLED display functions all together in the same program. Using all three causes a 070 memory crash. You may use (NeoPixel + Bluetooth) OR (OLED + Bluetooth), but NEVER all three. If the user explicitly asks to use all three, DO NOT write the code. Instead, return EXACTLY this string and nothing else:
+                    // ⚠️ 마이크로비트 메모리 한계(070 에러)로 인해 네오픽셀, 블루투스, OLED를 동시에 사용할 수 없어요. 두 가지만 선택해주세요.
+                    - [BT + NEOPIXEL INIT] If using BOTH Bluetooth (\`bluetooth\`) and NeoPixels, you MUST initialize them at the top level in this EXACT order: 1) \`bluetooth.startUartService()\`, 2) \`basic.pause(500)\`, 3) Initialize the strip.
+                    - [NO MUSIC ALLOWED] If Bluetooth (\`bluetooth\`) is used, you are STRICTLY FORBIDDEN from using any functions from the \`music\` namespace.
+                    - [UART EVENT DEFERRAL] NEVER call OLED or NeoPixel drawing functions directly inside \`bluetooth.onUartDataReceived\`. Parse and save data to global variables, and draw inside \`basic.forever\`.
+                    - [DATA PARSING] When handling UART data, always check if the string is not empty before parsing.`;
+                const systemPrompt = `
+You are an expert MakeCode JavaScript/TypeScript programmer for the "${robotName}" based on BBC Micro:bit V2.
+Your ONLY goal is to write complete, runnable code for the BBC Micro:bit V2 based on the user's request.
+
+[🚨 ZERO HALLUCINATION POLICY 🚨]
+You are STRICTLY FORBIDDEN from inventing any functions, methods, enums, or properties for custom extensions.
+If a custom extension function is not explicitly listed in the declaration below, IT DOES NOT EXIST.
+
+[EXACT LIBRARY DECLARATIONS]
+\`\`\`typescript
+${extensionSrc}
+\`\`\`
+
+RULES:
+1. **STRICT COMPLIANCE & NAMESPACES:** - Use ONLY the functions defined above for the robot's specific features.
+   - [🚨 CRITICAL ENUM PREFIX] You MUST strictly prefix ALL custom enums with their namespace (e.g., \`aiPonybot.PingUnit.Centimeters\`).
+   - [🚨 NEOPIXEL EXCEPTION (CRITICAL)] Even though \`NeoPixelMode\` and \`NeoPixelColors\` might appear inside the \`neopixel\` or \`vibeLamp\` namespace in the declaration, MakeCode treats them as GLOBAL. You MUST NOT prefix them with \`neopixel.\` or \`vibeLamp.\`. 
+   * CORRECT: \`NeoPixelMode.RGB\`, \`NeoPixelColors.Red\`
+   * WRONG: \`neopixel.NeoPixelMode.RGB\`, \`neopixel.NeoPixelColors.Red\`
+2. **ALLOWANCE FOR BUILT-IN NAMESPACES:** You are FULLY AUTHORIZED to use standard BBC Micro:bit MakeCode built-in namespaces (\`basic\`, \`input\`, \`led\`, \`pins\`, \`radio\`, \`Math\`, \`control\`, \`bluetooth\`).
+3. **LIGHT/NEOPIXEL USAGE:** - [CRITICAL] ONLY IF NeoPixels/Lights are needed, you MUST declare and initialize the strip variable at the top level:
+   ${initRule}
+   - [🚨 CRITICAL] If you set the brightness, you MUST set it to 255 by default (e.g., \`strip.setBrightness(255)\`).
+   ${colorRule}
+4. **BLOCK CONVERSION RULE (CRITICAL FOR MAKECODE):**
+   - [🚨 STRICT 'let' PLACEMENT] To prevent grey unparsed blocks, ALL \`let\` variable declarations MUST be grouped together at the ABSOLUTE TOP of the file, BEFORE any execution code or function calls (like \`vibeLamp.create\`, \`strip.setBrightness\`). NEVER mix \`let\` declarations with execution commands.
+   - [🚨 NO LOCAL 'let'] You are STRICTLY FORBIDDEN from using the \`let\` keyword inside ANY loop (\`basic.forever\`), event handler (\`bluetooth...\`), or \`if\` statement. ONLY reassign existing variables (e.g., \`distance = 10\`, NEVER \`let distance = 10\`).
+   - [🚨 MUST INITIALIZE] You MUST initialize variables with a value upon declaration (e.g., \`let x = 0;\`, \`let s = "";\`). NEVER write just \`let x;\`.
+   - [🚨 NO TYPE ANNOTATIONS & MUTATION] NEVER use explicit type annotations (e.g., \`: number\`). Use Type Inference (e.g., \`let dist = 0\`). MakeCode is statically typed, so NEVER change a variable's data type after initialization.
+5. **STARTUP / TOP-LEVEL CODE:** - Do NOT use \`basic.onStart()\`. In MakeCode, code written at the top-level acts as the "on start" block.
+   - Place all initialization code directly at the top level of the file.
+6. **OUTPUT FORMAT & EDUCATION:** - Output a friendly and encouraging explanation (2~3 sentences in Korean) FIRST. Briefly explain HOW the coding logic connects to the physical robot hardware.
+   - THEN, output the actual code wrapped in a markdown code block (\`\`\`typescript ... \`\`\`).
+7. **OLED DISPLAY COLOR:** When using display functions ALWAYS set the color parameter to \`1\` (ON) so the text is visible.
+8. **LED MATRIX vs NEOPIXEL vs OLED (INTELLIGENT UI/UX):**
+   ${matrixRule}
+   - [OLED - Intelligent Output] When displaying data on the OLED (128x64 resolution):
+     * Combine Text and Graphics: Use \`rectangle\`, \`horizontalLine\`, \`verticalLine\` intelligently alongside text (\`showString\`, \`showNumber\`) to make the output intuitive (e.g., bar graphs for sensor data).
+     * Full Canvas Utilization: Always consider the entire 128x64 canvas.
+9. **EVENT HANDLERS & PIN CONFLICTS:** - NEVER place event handlers (like \`input.onButtonPressed\`) inside loops.
+   - Never use the dedicated NeoPixel pin (DigitalPin.P8) for any other sensors or inputs.
+   - [🚨 CRITICAL] For Micro:bit V2 logo touch ("로고 터치", "로고 누름"), you MUST use \`input.onLogoEvent(TouchButtonEvent.Pressed, ...)\` INSTEAD OF \`input.onPinPressed(...)\`.
+10. **LOOP YIELDING & SCREEN OPTIMIZATION:** - If you use a \`while\` loop, you MUST include \`basic.pause(20)\` inside the loop body to prevent freezing.
+    - [🚨 OLED FLICKER PREVENTION (CRITICAL)] When animating on the OLED, NEVER use \`clear()\` inside the loop. Follow the "Partial Update" pattern:
+      1. Declare \`let oldX = 0; let oldY = 0;\` globally.
+      2. ERASE old object: draw same shape with \`color: 0\` at \`oldX\`, \`oldY\`.
+      3. DRAW new object: \`color: 1\` at \`x\`, \`y\`.
+      4. UPDATE: \`oldX = x; oldY = y;\`.
+${memoryRule}
+12. **MOTOR CONTROL SPECIFICATION (MECANUM vs NORMAL):**
+    - You MUST clearly distinguish between rotation and lateral/diagonal movement.
+    - Basic driving/rotation: \`aiPonybot.runNormal(...)\` with \`DirectionControl\`.
+    - Lateral/diagonal (게걸음, 수평이동): \`aiPonybot.runMecanum(...)\` with \`Mecanum\`.
+13. **[🚨 GUARDRAIL] PRIVACY PROTECTION:** If the prompt contains ANY personal information, return EXACTLY:
+// ⚠️ 바이브코딩 스튜디오는 개인정보를 수집하지 않으며, 관련 답변을 할 수 없어요
+14. **[🚨 GUARDRAIL] OFF-TOPIC PREVENTION:** If the prompt is chit-chat, return EXACTLY:
+// ⚠️ 수업과 관련된 바이브코딩 프롬프트를 넣어주세요.
+15. **[🚨 CONTEXT AWARENESS]** If EXISTING CODE is provided and the user wants to IMPROVE or FIX it: Keep the core structure and apply changes. If they ask to "start over", IGNORE existing code.
+`;
+
+                // ================== 모드별 사용자 쿼리 조립 ==================
+                let finalQuery = userQuery;
+                const codeIsEmpty = generatedCode.includes('여기에 AI가 생성한 코드') || generatedCode.includes('초기화됨');
+
+                if (!codeIsEmpty && promptMode === 'improve') {
+                    finalQuery = `[기존 코드]\n${generatedCode}\n\n[개선 및 추가 요청 사항]\n위 기존 코드의 뼈대를 유지하면서 다음 요청을 반영해줘: ${userQuery}`;
+                } else if (!codeIsEmpty && promptMode === 'fix') {
+                    finalQuery = `[기존 코드]\n${generatedCode}\n\n[문제 상황 및 에러 해결 요청]\n위 기존 코드에서 다음 논리적 문제가 발생했어. 원인을 파악해서 해결된 전체 코드를 줘: ${userQuery}`;
+                }
+
+                try {
+                    const aiCodeRaw = await callGemini(finalQuery, systemPrompt);
+
+                    // 가드레일(개인정보, 잡담) 방어 처리
+                    if (aiCodeRaw.includes('⚠️')) {
+                        setGeneratedCode('// 지원하지 않는 프롬프트입니다.');
+                        setMessages(prev => [...prev, { role: 'system', text: aiCodeRaw.replace(/\/\//g, '').trim() }]);
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    let explanation = "";
+                    let aiCode = "";
+                    
+                    // 정규식을 사용한 문자열 파싱 시 Babel 에러 방지를 위해 문자열 동적 결합 사용
+                    const marker = String.fromCharCode(96, 96, 96);
+                    const codeRegex = new RegExp(marker + '(?:typescript|javascript|ts|js)?\\s*([\\s\\S]*?)' + marker, 'i');
+                    const codeBlockMatch = aiCodeRaw.match(codeRegex);
+                    
+                    if (codeBlockMatch) {
+                        aiCode = codeBlockMatch[1].trim();
+                        // 코드 블록을 제거한 나머지 텍스트를 설명으로 추출
+                        explanation = aiCodeRaw.replace(codeRegex, '').trim();
+                    } else {
+                        // 만약 AI가 마크다운 코드 블록을 빼먹었을 경우 (안전 장치)
+                        aiCode = aiCodeRaw.replace(new RegExp(marker, 'g'), '').trim();
+                    }
+
+                    // 설명 텍스트 최종 포맷팅
+                    let finalExplanation = "";
+                    if (!explanation) {
+                        finalExplanation = "선택한 생성 결과입니다. MakeCode에서 블록 변환과 실제 동작을 확인하세요.";
+                    } else {
+                        finalExplanation = "코드를 완벽하게 조립했습니다! 오른쪽 에디터에서 확인하고 복사하세요.\n\n💡 간단 설명: \n" + explanation;
+                    }
+
+                    setGeneratedCode(aiCode);
+                    setMessages(prev => [...prev, { role: 'assistant', text: finalExplanation }]);
+                } catch (error) {
+                    setMessages(prev => [...prev, { role: 'system', text: `오류 발생: ${error.message}` }]);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleExplainCode = async () => {
+                if (isLoading || isExplaining) return;
+                if (generatedCode.startsWith('//') && generatedCode.length < 100) return;
+
+
+                setIsExplaining(true);
+                setShowExplanation(true);
+                setExplanationText("코드 선생님이 코드를 분석 중입니다...");
+
+                try {
+                    const systemPrompt = "You are a kind coding tutor. Explain the provided MakeCode JavaScript/TypeScript code to a beginner student in Korean. Break it down step-by-step. Keep it encouraging and easy to understand. Use emojis.";
+                    const explanation = await callGemini(generatedCode, systemPrompt);
+                    setExplanationText(explanation);
+                } catch (error) {
+                    setExplanationText(`설명을 가져오지 못했습니다: ${error.message}`);
+                } finally {
+                    setIsExplaining(false);
+                }
+            };
+
+            const handleCopyCode = () => {
+                const textArea = document.createElement("textarea");
+                textArea.value = generatedCode;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setCopySuccess(true);
+                    setTimeout(() => setCopySuccess(false), 2000);
+                } catch (err) {
+                    console.error('Failed to copy', err);
+                }
+                document.body.removeChild(textArea);
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    generateCode();
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-screen w-full bg-white text-[#111] overflow-hidden relative">
+                    <header className="flex justify-between items-center bg-black border-b border-[#333] px-6 py-3.5 shrink-0 z-50 shadow-md relative">
+                        <div className="flex items-center gap-3">
+                            <a href="https://boundaryx.io" target="_blank" rel="noreferrer" className="flex items-center transition-opacity hover:opacity-80">
+                                <img src="https://raw.githubusercontent.com/boundary-x/ai_voice_recognition/refs/heads/main/boundaryx_logo.png" alt="Boundary X Logo" className="h-6 w-auto" />
+                            </a>
+                            <div className="h-4 w-px bg-[#444] mx-1"></div>
+                            <span className="text-white text-lg font-bold tracking-tight">바이브코딩 스튜디오</span>
+                            
+                            {/* 제품 선택 탭 */}
+                            <div className="ml-6 flex bg-[#222] p-1 rounded-lg">
+                                <button 
+                                    onClick={() => setProduct('ponybot')}
+                                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${product === 'ponybot' ? 'bg-white text-black shadow-sm' : 'text-[#999] hover:text-white'}`}
+                                >
+                                    🤖 AI 포니봇
+                                </button>
+                                <button 
+                                    onClick={() => setProduct('vibelamp')}
+                                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${product === 'vibelamp' ? 'bg-white text-black shadow-sm' : 'text-[#999] hover:text-white'}`}
+                                >
+                                    💡 바이브램프
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={() => window.ComparisonLab.openKeys()} 
+                                className="text-[#999] hover:text-white transition-colors" 
+                                title="테스트 API 키 입력"
+                            >
+                                <i className="fa-solid fa-gear text-lg"></i>
+                            </button>
+                            <a href="https://boundaryx.io/shop" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-white border border-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-white hover:text-black transition-all">
+                                <span>제품 정보</span>
+                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </div>
+                        
+                    </header>
+
+                    <main className="flex flex-1 overflow-hidden relative bg-[#F8F9FA]">
+                        <div className="w-[420px] flex flex-col border-r border-[#D1D5DB] bg-white relative z-10 shadow-sm">
+                            <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-hide bg-white">
+                                {messages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                                        <div className={`max-w-[85%] p-4 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm ${
+                                            msg.role === 'user' 
+                                                ? 'bg-black text-white rounded-tr-none' 
+                                                : msg.role === 'system'
+                                                ? 'bg-[#FFF5F5] text-[#EA4335] border border-[#FECACA]'
+                                                : 'bg-[#F1F3F4] text-[#111] rounded-tl-none border border-[#E5E7EB]'
+                                        }`}>
+                                            <div className="whitespace-pre-wrap">{msg.text}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {isLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-[#F1F3F4] px-5 py-4 rounded-2xl rounded-tl-none flex gap-1.5 items-center border border-[#E5E7EB]">
+                                            <div className="w-2 h-2 bg-[#666] rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-[#666] rounded-full animate-bounce delay-75"></div>
+                                            <div className="w-2 h-2 bg-[#666] rounded-full animate-bounce delay-150"></div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <div className="p-4 bg-white border-t border-[#D1D5DB]">
+                                {/* 작업 모드 드롭다운 */}
+                                <div className="mb-2 flex items-center">
+                                    <select 
+                                        value={promptMode} 
+                                        onChange={(e) => setPromptMode(e.target.value)}
+                                        className="bg-[#F8F9FA] border border-[#D1D5DB] text-[#111] text-xs font-bold rounded-lg focus:ring-black focus:border-black block w-full p-2 outline-none cursor-pointer hover:bg-[#F1F3F4] transition-colors"
+                                    >
+                                        <option value="new">✨ 새로 코드 작성하기 (기존 무시)</option>
+                                        <option value="improve">🛠️ 오른쪽 코드 개선하기 (기능 추가/수정)</option>
+                                        <option value="fix">🐛 오른쪽 코드 에러 해결하기</option>
+                                    </select>
+                                </div>
+                                
+                                <div className="relative shadow-sm rounded-2xl">
+                                    <textarea
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        placeholder={getPlaceholder()}
+                                        className="w-full bg-[#F8F9FA] text-[#111] p-4 pr-16 rounded-2xl border border-[#D1D5DB] focus:ring-1 focus:ring-black focus:border-black outline-none resize-none h-[100px] scrollbar-hide text-[0.9rem] transition-all placeholder:text-[#999]"
+                                    ></textarea>
+                                    
+                                    <div className="absolute right-3 top-3 flex gap-2">
+                                        <button 
+                                            onClick={generateCode}
+                                            disabled={isLoading}
+                                            title="전송하기"
+                                            className="w-9 h-9 flex items-center justify-center bg-black text-white rounded-full hover:bg-[#333] disabled:opacity-50 transition-colors shadow-md"
+                                        >
+                                            <i className="fa-solid fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 flex flex-col overflow-hidden relative">
+                            <div className="h-16 bg-white border-b border-[#D1D5DB] flex items-center justify-between px-6 z-20">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-black text-white p-1.5 px-2 rounded-lg shadow-sm">
+                                        <i className="fa-solid fa-code"></i>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold text-[#111]">main.js</div>
+                                        <div className="text-[10px] text-[#666] font-medium">MakeCode JavaScript ({product === 'ponybot' ? '포니봇' : '바이브램프'})</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={handleExplainCode}
+                                        className="flex items-center gap-2 px-4 py-2 bx-pill-btn bx-btn-outline text-xs"
+                                        title="이 코드가 무슨 뜻인지 설명해줘요"
+                                    >
+                                        <i className="fa-solid fa-book-open text-[#137333]"></i>
+                                        코드 설명
+                                    </button>
+                                    <div className="h-4 w-px bg-[#DDD] mx-1"></div>
+                                    <button 
+                                        onClick={() => {
+                                            setGeneratedCode("// 초기화됨");
+                                            setMessages([{ role: 'assistant', text: '코드가 초기화되었습니다. 새로운 코드를 작성해보세요!' }]);
+                                            setPromptMode('new');
+                                            setShowExplanation(false);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bx-pill-btn bx-btn-danger-outline text-xs"
+                                    >
+                                        <i className="fa-regular fa-trash-can"></i>
+                                        지우기
+                                    </button>
+                                    <button 
+                                        onClick={handleCopyCode}
+                                        className="flex items-center gap-2 px-5 py-2 bx-pill-btn bx-btn-black text-xs shadow-lg w-[125px] justify-center"
+                                    >
+                                        {copySuccess ? <i className="fa-solid fa-check"></i> : <i className="fa-regular fa-copy"></i>}
+                                        <span>{copySuccess ? '복사 완료!' : '코드 복사하기'}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex overflow-hidden relative p-6 gap-6">
+                                <div className={`transition-all duration-300 ${showExplanation ? 'w-3/5' : 'w-full'} h-full relative rounded-2xl shadow-sm overflow-hidden border border-[#D1D5DB]`}>
+                                    <textarea
+                                        value={generatedCode}
+                                        onChange={(e) => setGeneratedCode(e.target.value)}
+                                        className="w-full h-full bg-[#1e1e1e] text-[#d4d4d4] p-6 code-font text-sm leading-relaxed resize-none focus:outline-none"
+                                        spellCheck="false"
+                                    ></textarea>
+                                    <div className="absolute bottom-4 right-6 pointer-events-none opacity-50">
+                                        <span className="text-[10px] text-white bg-black/30 px-2 py-1 rounded">TypeScript / JavaScript</span>
+                                    </div>
+                                </div>
+
+                                {showExplanation && (
+                                    <div className="w-2/5 h-full bg-white rounded-2xl shadow-lg border border-[#D1D5DB] flex flex-col animate-fade-in overflow-hidden">
+                                        <div className="p-5 border-b border-[#D1D5DB] flex justify-between items-center bg-[#F8F9FA]">
+                                            <div className="flex items-center gap-2 text-[#111] font-bold">
+                                                <div className="p-1.5 bg-[#E6F4EA] rounded-md text-[#137333]">
+                                                    <i className="fa-solid fa-book-open"></i>
+                                                </div>
+                                                <span>코드 선생님</span>
+                                            </div>
+                                            <button onClick={() => setShowExplanation(false)} className="text-[#888] hover:text-[#000] transition-colors">
+                                                <i className="fa-solid fa-xmark text-lg"></i>
+                                            </button>
+                                        </div>
+                                        <div className="flex-1 p-6 overflow-y-auto text-sm text-[#333] leading-7 bg-white">
+                                            {isExplaining ? (
+                                                <div className="flex flex-col items-center justify-center h-48 gap-4 text-[#666]">
+                                                    <div className="w-8 h-8 border-4 border-[#F1F3F4] border-t-black rounded-full animate-spin"></div>
+                                                    <span className="font-medium animate-pulse">코드를 꼼꼼히 분석 중이에요...</span>
+                                                </div>
+                                            ) : (
+                                                <div className="whitespace-pre-wrap font-medium">{explanationText}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+
+                    <footer className="bg-black text-white px-8 py-5 border-t border-[#222] shrink-0 text-xs flex justify-between items-center z-50">
+                        <div className="flex flex-col gap-1.5">
+                            <strong className="text-sm font-bold tracking-tight">바운더리엑스 (Boundary X)</strong>
+                            <span className="text-[#999] font-normal">"미래 기술을 교실의 책상 위로 옮기는 에듀테크 기업"</span>
+                        </div>
+                        <div className="flex items-center gap-8">
+                             <div className="flex items-center gap-2 bg-[#1a1a1a] px-3 py-1.5 rounded-full border border-[#333]">
+                                <i className="fa-solid fa-circle-exclamation text-[#4285F4]"></i>
+                                <span className="text-[#ccc]">사용법: 생성된 코드를 <b>MakeCode JavaScript 탭</b>에 붙여넣으세요.</span>
+                            </div>
+                            <div className="text-[#666] font-medium">
+                                © 2024 Boundary X Co. All rights reserved.
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script>
+(() => {
+  const history = [];
+const defaults = {
+  gemini: { model: 'gemini-3.8-flash', input: .75, output: 3.75 },
+  claude: { model: 'claude-haiku-5-5', input: .10, output: .50 }
+};
+function config(env = {}) {
+  return Object.fromEntries(Object.entries(defaults).map(([provider, d]) => {
+    const prefix = provider.toUpperCase();
+    const model = env[`${prefix}_MODEL`] || d.model;
+    const number = (name, fallback) => env[name] !== undefined && env[name] !== '' ? Number(env[name]) : fallback;
+    // Unknown models must not inherit another model's prices.
+    const known = model === d.model;
+    const promotionActive = new Date() < new Date('2027-01-01T00:00:00Z');
+    return [provider, {
+      model,
+      key: env[provider === 'gemini' ? 'GEMINI_API_KEY' : 'ANTHROPIC_API_KEY'],
+      inputRate: number(`${prefix}_INPUT_RATE`, known ? (provider === 'gemini' && !promotionActive ? 1.5 : d.input) : null),
+      outputRate: number(`${prefix}_OUTPUT_RATE`, known ? (provider === 'gemini' && !promotionActive ? 7.5 : d.output) : null)
+    }];
+  }));
+}
+function normalize(provider, data) {
+  if (provider === 'gemini') {
+    const candidate = data.candidates?.[0];
+    const u = data.usageMetadata;
+    return {
+      text: (candidate?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(''),
+      stopReason: candidate?.finishReason || data.promptFeedback?.blockReason || 'unknown',
+      complete: candidate?.finishReason === 'STOP',
+      inputTokens: u?.promptTokenCount ?? null,
+      outputTokens: u?.candidatesTokenCount == null ? null : u.candidatesTokenCount + (u.thoughtsTokenCount || 0),
+      thinkingTokens: u?.thoughtsTokenCount ?? null,
+      rawUsage: u || null
+    };
+  }
+  return {
+    text: (data.content || []).filter(p => p.type === 'text').map(p => p.text).join('\n'),
+    stopReason: data.stop_reason || 'unknown', complete: data.stop_reason === 'end_turn',
+    inputTokens: data.usage ? (data.usage.input_tokens || 0) + (data.usage.cache_read_input_tokens || 0) + (data.usage.cache_creation_input_tokens || 0) : null,
+    outputTokens: data.usage?.output_tokens ?? null, thinkingTokens: null,
+    rawUsage: data.usage || null
+  };
+}
+function estimate(provider, result, settings) {
+  let { inputRate, outputRate } = settings;
+  if (provider === 'claude' && settings.model === defaults.claude.model && result.inputTokens > 100000) {
+    inputRate = .50; outputRate = 2.50;
+  }
+  if (![inputRate, outputRate, result.inputTokens, result.outputTokens].every(x => typeof x === 'number' && Number.isFinite(x) && x >= 0)) return null;
+  return (result.inputTokens * inputRate + result.outputTokens * outputRate) / 1e6;
+}
+async function runProvider(provider, settings, input, fetcher = fetch) {
+  const start = performance.now();
+  const base = { provider, model: settings.model, attempts: 1 };
+  if (!settings.key) return { ...base, ok: false, error: `${provider === 'claude' ? 'ANTHROPIC_API_KEY' : 'GEMINI_API_KEY'} 환경 변수가 설정되지 않았습니다.`, elapsedMs: 0 };
+  const gemini = provider === 'gemini';
+  const url = gemini
+    ? `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`
+    : 'https://api.anthropic.com/v1/messages';
+  const body = gemini ? {
+    contents: [{ role: 'user', parts: [{ text: input.prompt }] }],
+    systemInstruction: { parts: [{ text: input.systemInstruction }] },
+    generationConfig: { maxOutputTokens: 8192 }
+  } : {
+    model: settings.model, max_tokens: 8192, system: input.systemInstruction,
+    messages: [{ role: 'user', content: input.prompt }]
+  };
+  try {
+    const response = await fetcher(url, {
+      method: 'POST', signal: AbortSignal.timeout(120000),
+      headers: gemini ? { 'content-type': 'application/json', 'x-goog-api-key': settings.key }
+        : { 'content-type': 'application/json', 'x-api-key': settings.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify(body)
+    });
+    // Do not relay provider error bodies: these may contain request or credential details.
+    if (!response.ok) return { ...base, ok: false, status: response.status, error: `API HTTP ${response.status} — 키·모델 접근 권한·할당량을 확인하세요.`, elapsedMs: Math.round(performance.now() - start) };
+    const result = normalize(provider, await response.json());
+    return { ...base, ...result, ok: !!result.text.trim(), error: result.text.trim() ? undefined : '텍스트 결과가 없습니다.', estimatedUsd: estimate(provider, result, settings), elapsedMs: Math.round(performance.now() - start) };
+  } catch (error) {
+    return { ...base, ok: false, error: error.name === 'TimeoutError' ? '120초 응답 제한을 초과했습니다. 서버에서 과금이 발생했을 수 있습니다.' : 'API 연결 또는 응답 처리에 실패했습니다.', elapsedMs: Math.round(performance.now() - start) };
+  }
+}
+
+
+  let apiKeys = {gemini:'', claude:''};
+  const modelSettings = config({});
+  function keyDialog() {
+    if (active) return;
+    const d = dialog('테스트 API 키 입력');
+    d.append(el('p', '각 업체의 실제 API 키를 입력하세요. 키는 현재 탭 메모리에서만 사용하며 새로고침하면 지워집니다. 각 API 업체로 직접 요청합니다.'));
+    for (const [p, title] of [['gemini','Gemini API 키'], ['claude','Claude API 키']]) {
+      const label=el('label',title); const input=el('input'); input.type='password'; input.autocomplete='off'; input.placeholder=title; input.value=apiKeys[p]; input.oninput=()=>{apiKeys[p]=input.value.trim();}; label.append(input); d.append(label);
+    }
+    d.append(button('키 지우기',()=>{apiKeys={gemini:'',claude:''}; d.close();}),button('입력 완료',()=>d.close()));
+  }
+  let config;
+  let active = false;
+  let modal;
+  const el = (tag, text, cls) => {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (cls) node.className = cls;
+    return node;
+  };
+  const button = (text, action) => {
+    const b = el('button', text); b.type = 'button'; b.onclick = action; return b;
+  };
+  const ready = Promise.resolve();
+  const bar = el('div', undefined, 'lab-bar');
+  bar.append(el('strong', 'TEST · 모델 비교'), el('span', 'Gemini Flash ↔ Claude Haiku · 실행할 때 두 API가 호출됩니다.'));
+  bar.append(button('API 키 입력', keyDialog), button('비교 기록', showHistory), button('결과 내려받기', download));
+  document.body.append(bar);
+  function download() {
+    const blob = new Blob([JSON.stringify({ schemaVersion: 1, source: 'boundary-x/vibe_coding_studio/index.html', sourceBlob: '92fbab429e3cdd8e83c41b157f9842f6104f3230', exportedAt: new Date().toISOString(), records: history }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = el('a'); a.href = url; a.download = `vibe-comparison-${Date.now()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function dialog(title) {
+    modal?.remove();
+    const d = el('dialog', undefined, 'lab-dialog');
+    d.append(el('h2', title)); document.body.append(d); d.showModal(); modal = d; return d;
+  }
+  function showHistory() {
+    if (active) return;
+    const d = dialog('비교 기록');
+    d.append(el('p', '최근 40건을 이 페이지에서만 보관합니다. 새로고침 전에 내려받으세요. 내보내기에는 질문·코드·시스템 규칙이 포함됩니다.'));
+    for (const record of history) {
+      d.append(button(`${record.at} · ${record.context.product} · ${record.context.mode}`, () => display(record)));
+    }
+    d.append(button('닫기', () => d.close()));
+  }
+  function display(record, resolve, reject) {
+    const d = dialog('Gemini · Claude 생성 결과 비교');
+    d.append(el('p', '동일한 입력 · 모델별 1회 호출 · 자동 재시도 없음. 결과 선택 후 원래 에디터에 반영됩니다.'));
+    d.append(el('p', '블록 변환과 로봇 동작은 자동 검증하지 않습니다. 각 결과를 제품별 MakeCode 환경에 복사해 확인한 뒤 평가하세요.'));
+    const grid = el('div', undefined, 'lab-grid'); d.append(grid);
+    for (const r of record.results) {
+      const card = el('section', undefined, 'lab-card'); grid.append(card);
+      card.append(el('h3', r.model));
+      const cost = r.estimatedUsd == null ? '산출 불가' : `${r.estimatedUsd.toFixed(6)}`;
+      card.append(el('p', `${(r.elapsedMs / 1000).toFixed(2)}초 · 입력 ${r.inputTokens ?? '미제공'} / 과금 출력 ${r.outputTokens ?? '미제공'} 토큰 · 추정 ${cost}`));
+      card.append(el('small', '캐시 할인 전 단가 추정액 · 과금 출력에는 추론 사용량 포함 · 실패 호출 비용은 미확인'));
+      if (!r.ok) card.append(el('p', r.error, 'lab-error'));
+      if (r.ok && !r.complete) card.append(el('p', `종료 상태: ${r.stopReason}. 잘리거나 거절된 결과일 수 있어 적용할 수 없습니다.`, 'lab-error'));
+      card.append(el('pre', r.text || '(생성 결과 없음)'));
+      if (r.text) card.append(button('응답 복사', async () => {
+        try { await navigator.clipboard.writeText(r.text); } catch { alert('복사 권한이 없습니다. 결과 텍스트를 직접 선택해 복사하세요.'); }
+      }));
+      r.review ||= {};
+      for (const [key, label] of [['blocks', '블록 변환'], ['intent', '원하는 동작'], ['preservation', '기존 코드 보존']]) {
+        const row = el('label', label + ' '); const select = el('select');
+        for (const v of ['미평가', '성공', '실패', '해당 없음']) { const o = el('option', v); o.value = v; select.append(o); }
+        select.value = r.review[key] || '미평가'; select.onchange = () => { r.review[key] = select.value; }; row.append(select); card.append(row);
+      }
+      const notes = el('textarea'); notes.placeholder = '오류 원인·실제 동작·관찰 내용'; notes.value = r.review.notes || ''; notes.oninput = () => { r.review.notes = notes.value; }; card.append(notes);
+      if (resolve && r.ok && r.complete) card.append(button('이 결과를 에디터에 적용', () => { record.selected = r.provider; d.close(); resolve(r.text); }));
+    }
+    const close = () => { d.close(); if (reject) reject(Error('비교 결과를 적용하지 않았습니다. 기존 코드를 유지합니다.')); };
+    d.addEventListener('cancel', event => { event.preventDefault(); close(); });
+    d.append(button(resolve ? '적용하지 않고 닫기' : '닫기', close), button('결과 내려받기', download));
+  }
+  window.ComparisonLab = {
+    openKeys: keyDialog,
+    async generate(prompt, systemInstruction, context) {
+      await ready;
+      if (active) throw Error('비교가 이미 진행 중입니다.');
+      if (!apiKeys.gemini || !apiKeys.claude) { keyDialog(); throw Error('두 API 키를 입력한 뒤 다시 요청해주세요.'); }
+      active = true;
+      try {
+        const snapshot = { ...apiKeys };
+        const settingsSnapshot = Object.fromEntries(Object.entries(modelSettings).map(([p,s])=>[p,{...s,key:snapshot[p]}]));
+        const results = await Promise.all(Object.entries(settingsSnapshot).map(([p,s])=>runProvider(p,s,{prompt,systemInstruction})));
+        const record = {id:crypto.randomUUID(),at:new Date().toISOString(),settings:{maxOutputTokens:8192,retries:0,reasoning:'provider default',temperature:'provider default'},results};
+        record.prompt = prompt; record.systemInstruction = systemInstruction; record.context = { ...context };
+        history.unshift(record); if (history.length > 40) history.pop();
+        return await new Promise((resolve, reject) => display(record, resolve, reject));
+      } finally { active = false; }
+    }
+  };
+})();
+
+
+</script></body>
+</html>
+
+
