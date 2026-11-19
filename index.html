@@ -839,7 +839,6 @@ async function runProvider(provider, settings, input, fetcher = fetch) {
     }
     d.append(button('키 지우기',()=>{apiKeys={gemini:'',claude:''}; d.close();}),button('입력 완료',()=>d.close()));
   }
-  let config;
   let active = false;
   let modal;
   const el = (tag, text, cls) => {
