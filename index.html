@@ -386,6 +386,24 @@ namespace vibeLamp {
             );
         };
 
+        function parseExplanationBlocks(text) {
+            const blocks = [];
+            for (const line of text.split(/\r?\n/)) {
+                const value = line.trim();
+                if (!value || /^[-*_]{3,}$/.test(value)) continue;
+                const match = value.match(/^(\d+[.)]|[-*])\s+(.+)$/);
+                if (match) {
+                    const kind = /^\d/.test(match[1]) ? 'ol' : 'ul';
+                    const last = blocks[blocks.length - 1];
+                    if (last && last.kind === kind) last.items.push(match[2]);
+                    else blocks.push({ kind, start: kind === 'ol' ? parseInt(match[1],10) : undefined, items: [match[2]] });
+                } else {
+                    const heading = value.match(/^#{1,6}\s+(.+)$/);
+                    blocks.push({ kind: heading ? 'heading' : 'paragraph', text: heading ? heading[1] : value });
+                }
+            }
+            return blocks;
+        }
 
         // Render a small, safe Markdown subset as React nodes (never raw HTML).
         const ExplanationText = ({ text }) => {
@@ -393,29 +411,13 @@ namespace vibeLamp {
                 part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2,-2)}</strong> :
                 part.startsWith('`') && part.endsWith('`') ? <code key={i}>{part.slice(1,-1)}</code> :
                 part.startsWith('*') && part.endsWith('*') ? <em key={i}>{part.slice(1,-1)}</em> : part);
-            const blocks = [];
-            let items = [], kind = '';
-            const flush = () => {
-                if (!items.length) return;
-                const Tag = kind === 'ol' ? 'ol' : 'ul';
-                blocks.push(<Tag key={blocks.length} className={kind === 'ol' ? 'list-decimal pl-5 space-y-2 mb-3' : 'list-disc pl-5 space-y-2 mb-3'}>{items.map((item,i)=><li key={i}>{inline(item)}</li>)}</Tag>);
-                items = [];
-            };
-            for (const line of text.split(/\r?\n/)) {
-                const value = line.trim();
-                const match = value.match(/^(\d+[.)]|[-*])\s+(.+)$/);
-                if (match) {
-                    const next = /^\d/.test(match[1]) ? 'ol' : 'ul';
-                    if (kind !== next) flush();
-                    kind = next; items.push(match[2]); continue;
+            return <div className="explanation-text">{parseExplanationBlocks(text).map((block,i) => {
+                if (block.kind === 'ol' || block.kind === 'ul') {
+                    const Tag = block.kind;
+                    return <Tag key={i} start={block.start} className={block.kind === 'ol' ? 'list-decimal pl-5 space-y-2 mb-3' : 'list-disc pl-5 space-y-2 mb-3'}>{block.items.map((item,j)=><li key={j}>{inline(item)}</li>)}</Tag>;
                 }
-                flush();
-                if (!value || /^[-*_]{3,}$/.test(value)) continue;
-                const heading = value.match(/^#{1,6}\s+(.+)$/);
-                blocks.push(heading ? <h4 key={blocks.length} className="font-bold mb-2">{inline(heading[1])}</h4> : <p key={blocks.length} className="mb-3">{inline(value)}</p>);
-            }
-            flush();
-            return <div className="explanation-text">{blocks}</div>;
+                return block.kind === 'heading' ? <h4 key={i} className="font-bold mb-2">{inline(block.text)}</h4> : <p key={i} className="mb-3">{inline(block.text)}</p>;
+            })}</div>;
         };
 
         const App = () => {
