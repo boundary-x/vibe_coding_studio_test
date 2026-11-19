@@ -269,6 +269,82 @@ namespace vibeLamp {
         // 🚀 [필수 설정] 백엔드(Cloud Functions) 접속 URL
         // 구글 클라우드에서 배포 완료 후 받은 긴 URL을 아래 따옴표 안에 붙여넣으세요.
         // =========================================================================
+
+        // MakeCode official renderer: code only; credentials are never sent to this frame.
+        const BlockPreview = ({ code, product }) => {
+            const [result, setResult] = useState({ status: 'loading' });
+            const [attempt, setAttempt] = useState(0);
+            const [fullSize, setFullSize] = useState(false);
+            useEffect(() => {
+                setResult({ status: 'loading' });
+                setFullSize(false);
+                const origin = 'https://makecode.microbit.org';
+                const frame = document.createElement('iframe');
+                const id = 'blocks-' + crypto.randomUUID();
+                let finished = false;
+                let sent = false;
+                let timer;
+                const cleanup = () => {
+                    clearTimeout(timer);
+                    window.removeEventListener('message', receive);
+                    frame.remove();
+                };
+                const finish = (value) => {
+                    if (finished) return;
+                    finished = true;
+                    cleanup();
+                    setResult(value);
+                };
+                const receive = (event) => {
+                    if (event.origin !== origin || event.source !== frame.contentWindow) return;
+                    const msg = event.data;
+                    if (!msg || msg.source !== 'makecode') return;
+                    if (msg.type === 'renderready' && !sent) {
+                        sent = true;
+                        const packages = product === 'ponybot'
+                            ? ['ai-ponybot-basic=github:boundary-x/ai_ponybot_basic#v1.3.1',
+                               'ai-ponybot-light=github:boundary-x/ai_ponybot_light#v1.1.1']
+                            : ['vibelamp=github:boundary-x/vibelamp#v1.4.0'];
+                        // Bluetooth and radio are mutually exclusive on micro:bit.
+                        packages.push(/\bbluetooth\s*\./.test(code) ? 'bluetooth' : 'radio');
+                        if (/\bservos\s*\./.test(code)) packages.push('servo');
+                        frame.contentWindow.postMessage({
+                            type: 'renderblocks', id, code,
+                            options: { package: packages.join(','), snippetMode: false }
+                        }, origin);
+                    }
+                    if (msg.type === 'renderblocks' && msg.id === id) {
+                        if (msg.error || !/^data:image\/(?:png|svg\+xml)[;,]/.test(msg.uri || '')) {
+                            finish({ status: 'error', message: '블록 이미지를 만들지 못했어요. 코드 오류나 지원되지 않는 블록이 있는지 제품별 MakeCode에서 확인해주세요.' });
+                        } else {
+                            finish({ status: 'ready', uri: msg.uri, width: msg.width });
+                        }
+                    }
+                };
+                frame.title = 'MakeCode 블록 이미지 변환기';
+                frame.setAttribute('aria-hidden', 'true');
+                frame.tabIndex = -1;
+                frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0';
+                window.addEventListener('message', receive);
+                timer = setTimeout(() => finish({ status: 'error', message: '블록 이미지 변환 시간이 초과됐어요. 인터넷 연결을 확인하고 다시 시도해주세요.' }), 60000);
+                frame.src = origin + '/--docs?render=1&lang=ko';
+                document.body.appendChild(frame);
+                return () => { finished = true; cleanup(); };
+            }, [code, product, attempt]);
+            return (
+                <section className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4" aria-label="블록 이미지">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <h3 className="font-bold">블록으로 보기</h3>
+                        {result.status === 'ready' && <button className="text-xs underline" onClick={() => setFullSize(!fullSize)}>{fullSize ? '화면에 맞추기' : '원본 크기로 보기'}</button>}
+                    </div>
+                    {result.status === 'loading' && <p role="status">MakeCode에서 블록 이미지를 만들고 있어요…</p>}
+                    {result.status === 'error' && <div role="status"><p>{result.message}</p><button className="underline mt-2" onClick={() => setAttempt(attempt + 1)}>블록 이미지 다시 만들기</button></div>}
+                    {result.status === 'ready' && <div className="overflow-auto bg-white rounded-lg p-2" style={{maxHeight:'55vh'}}><img src={result.uri} alt="현재 설명 중인 코드의 MakeCode 블록 이미지" style={{width:fullSize ? result.width : '100%', maxWidth:fullSize ? 'none' : result.width, height:'auto'}} /></div>}
+                    <p className="text-xs text-gray-500 mt-2">설명을 요청한 시점의 코드예요. 회색 블록은 JavaScript가 그대로 표시된 부분입니다.</p>
+                </section>
+            );
+        };
+
         const App = () => {
             // 접속키 상태 관리로 변경 (apiKey -> accessKey)
 
@@ -288,6 +364,7 @@ namespace vibeLamp {
             
             const [showExplanation, setShowExplanation] = useState(false);
             const [explanationText, setExplanationText] = useState('');
+            const [explanationSnapshot, setExplanationSnapshot] = useState(null);
             const [isExplaining, setIsExplaining] = useState(false);
 
             const messagesEndRef = useRef(null);
@@ -497,11 +574,12 @@ ${memoryRule}
 
                 setIsExplaining(true);
                 setShowExplanation(true);
+                setExplanationSnapshot({ code: generatedCode, product, id: crypto.randomUUID() });
                 setExplanationText("코드 선생님이 코드를 분석 중입니다...");
 
                 try {
-                    const systemPrompt = "You are a kind coding tutor. Explain the provided MakeCode JavaScript/TypeScript code to a beginner student in Korean. Break it down step-by-step. Keep it encouraging and easy to understand. Use emojis.";
-                    const explanation = await callGemini(generatedCode, systemPrompt);
+                    const systemPrompt = "You are a coding tutor for beginners. Explain the supplied MakeCode code in Korean using block concepts: event block, sequence, repeat, condition and function. Describe when it starts and the order of actions, with milliseconds also expressed in seconds. Do not focus on JavaScript syntax. You have the code, not the rendered image: never claim to see block colors, positions or labels. Explain only behavior supported by the code; do not claim that block conversion or robot operation succeeded. For Ponybot runNormal, Clockwise is left and CounterClockwise is right. Use short numbered steps.";
+                    const explanation = await window.ComparisonLab.explain(generatedCode, systemPrompt);
                     setExplanationText(explanation);
                 } catch (error) {
                     setExplanationText(`설명을 가져오지 못했습니다: ${error.message}`);
@@ -703,13 +781,16 @@ ${memoryRule}
                                                 <div className="p-1.5 bg-[#E6F4EA] rounded-md text-[#137333]">
                                                     <i className="fa-solid fa-book-open"></i>
                                                 </div>
-                                                <span>코드 선생님</span>
+                                                <span>블록과 코드 설명</span>
                                             </div>
                                             <button onClick={() => setShowExplanation(false)} className="text-[#888] hover:text-[#000] transition-colors">
                                                 <i className="fa-solid fa-xmark text-lg"></i>
                                             </button>
                                         </div>
                                         <div className="flex-1 p-6 overflow-y-auto text-sm text-[#333] leading-7 bg-white">
+                                            {explanationSnapshot && <BlockPreview key={explanationSnapshot.id} code={explanationSnapshot.code} product={explanationSnapshot.product} />}
+                                            {explanationSnapshot && (generatedCode !== explanationSnapshot.code || product !== explanationSnapshot.product) && <p className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">코드 또는 제품이 변경됐어요. ‘코드 설명’을 다시 눌러 새로 확인해주세요.</p>}
+                                            <h3 className="font-bold mb-3">동작 순서 설명</h3>
                                             {isExplaining ? (
                                                 <div className="flex flex-col items-center justify-center h-48 gap-4 text-[#666]">
                                                     <div className="w-8 h-8 border-4 border-[#F1F3F4] border-t-black rounded-full animate-spin"></div>
@@ -857,7 +938,7 @@ async function runProvider(provider, settings, input, fetcher = fetch) {
   };
   const ready = Promise.resolve();
   const bar = el('div', undefined, 'lab-bar');
-  bar.append(el('strong', 'TEST · 방향 규칙 v2'), el('span', 'Gemini Flash ↔ Claude Haiku · 실행할 때 두 API가 호출됩니다.'));
+  bar.append(el('strong', 'TEST · 블록 이미지 v1'), el('span', 'Gemini Flash ↔ Claude Haiku · 실행할 때 두 API가 호출됩니다.'));
   bar.append(button('API 키 입력', keyDialog), button('비교 기록', showHistory), button('결과 내려받기', download));
   document.body.append(bar);
   function download() {
@@ -911,6 +992,14 @@ async function runProvider(provider, settings, input, fetcher = fetch) {
   }
   window.ComparisonLab = {
     openKeys: keyDialog,
+    async explain(prompt, systemInstruction) {
+      await ready;
+      const provider = apiKeys.gemini ? 'gemini' : apiKeys.claude ? 'claude' : null;
+      if (!provider) return '블록 이미지는 API 키 없이 볼 수 있어요. 동작 설명도 보려면 상단 ‘API 키 입력’에서 Gemini 또는 Claude 키를 입력한 뒤 ‘코드 설명’을 다시 눌러주세요.';
+      const result = await runProvider(provider, { ...modelSettings[provider], key: apiKeys[provider] }, { prompt, systemInstruction });
+      if (!result.ok || !result.complete) throw Error(result.error || '설명이 끝까지 생성되지 않았습니다. 다시 시도해주세요.');
+      return result.text;
+    },
     async generate(prompt, systemInstruction, context) {
       await ready;
       if (active) throw Error('비교가 이미 진행 중입니다.');
