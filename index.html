@@ -68,7 +68,39 @@
             border-color: #EA4335;
         }
         ::selection { background: #000; color: #fff; }
-    </style>
+    
+/* Block explanation: preserve readable space on side panels and mobile. */
+.studio-main,.studio-workspace,.studio-content,.explanation-panel {min-width:0;min-height:0}
+.chat-pane {width:clamp(280px,30vw,380px);flex-shrink:0}
+.studio-toolbar {height:auto;min-height:64px;gap:12px;flex-wrap:wrap;padding:12px 20px}
+.studio-toolbar button {white-space:nowrap;flex-shrink:0}
+.explanation-text {overflow-wrap:anywhere}
+.explanation-text code {background:#f1f3f4;border-radius:4px;padding:1px 4px;font-size:.9em}
+@media(max-width:1100px) {
+ .studio-main.is-explaining .chat-pane,.studio-main.is-explaining .code-editor {display:none}
+ .studio-main.is-explaining .explanation-panel {width:100%}
+ .studio-content {padding:16px;gap:16px}
+ .studio-header {gap:12px;flex-wrap:wrap}
+ .studio-brand {flex-wrap:wrap;gap:10px}
+ .studio-products {margin-left:0}
+ .studio-footer {padding:10px 16px}
+ .studio-footer > div:last-child {display:none}
+}
+@media(max-width:640px) {
+ .studio-main {flex-direction:column}
+ .chat-pane {width:100%;height:42%;border-right:0;border-bottom:1px solid #d1d5db}
+ .studio-main.is-explaining .studio-workspace {height:100%}
+ .studio-header {padding:10px 12px}
+ .studio-brand > span {font-size:14px}
+ .studio-brand img {height:20px}
+ .studio-toolbar {padding:10px 12px}
+ .studio-toolbar > div:last-child {gap:8px;flex-wrap:wrap}
+ .studio-toolbar button {padding:8px 10px;width:auto}
+ .studio-content {padding:10px}
+ .studio-footer {display:none}
+}
+
+</style>
 <style>.lab-bar{height:76px;position:fixed;inset:0 0 auto;z-index:1000;background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:10px 18px;display:flex;gap:14px;align-items:center;font:13px system-ui;color:#172554;flex-wrap:wrap}
 body{padding-top:76px!important}#root>div{height:calc(100vh - 76px)!important}
 .lab-bar button,.lab-dialog button{border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:8px 12px;color:#172554;cursor:pointer;font-weight:600}
@@ -354,6 +386,38 @@ namespace vibeLamp {
             );
         };
 
+
+        // Render a small, safe Markdown subset as React nodes (never raw HTML).
+        const ExplanationText = ({ text }) => {
+            const inline = value => value.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).map((part, i) =>
+                part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2,-2)}</strong> :
+                part.startsWith('`') && part.endsWith('`') ? <code key={i}>{part.slice(1,-1)}</code> :
+                part.startsWith('*') && part.endsWith('*') ? <em key={i}>{part.slice(1,-1)}</em> : part);
+            const blocks = [];
+            let items = [], kind = '';
+            const flush = () => {
+                if (!items.length) return;
+                const Tag = kind === 'ol' ? 'ol' : 'ul';
+                blocks.push(<Tag key={blocks.length} className={kind === 'ol' ? 'list-decimal pl-5 space-y-2 mb-3' : 'list-disc pl-5 space-y-2 mb-3'}>{items.map((item,i)=><li key={i}>{inline(item)}</li>)}</Tag>);
+                items = [];
+            };
+            for (const line of text.split(/\r?\n/)) {
+                const value = line.trim();
+                const match = value.match(/^(\d+[.)]|[-*])\s+(.+)$/);
+                if (match) {
+                    const next = /^\d/.test(match[1]) ? 'ol' : 'ul';
+                    if (kind !== next) flush();
+                    kind = next; items.push(match[2]); continue;
+                }
+                flush();
+                if (!value || /^[-*_]{3,}$/.test(value)) continue;
+                const heading = value.match(/^#{1,6}\s+(.+)$/);
+                blocks.push(heading ? <h4 key={blocks.length} className="font-bold mb-2">{inline(heading[1])}</h4> : <p key={blocks.length} className="mb-3">{inline(value)}</p>);
+            }
+            flush();
+            return <div className="explanation-text">{blocks}</div>;
+        };
+
         const App = () => {
             // 접속키 상태 관리로 변경 (apiKey -> accessKey)
 
@@ -587,7 +651,7 @@ ${memoryRule}
                 setExplanationText("코드 선생님이 코드를 분석 중입니다...");
 
                 try {
-                    const systemPrompt = "You are a coding tutor for beginners. Explain the supplied MakeCode code in Korean using block concepts: event block, sequence, repeat, condition and function. Describe when it starts and the order of actions, with milliseconds also expressed in seconds. Do not focus on JavaScript syntax. You have the code, not the rendered image: never claim to see block colors, positions or labels. Explain only behavior supported by the code; do not claim that block conversion or robot operation succeeded. For Ponybot runNormal, Clockwise is left and CounterClockwise is right. Use short numbered steps.";
+                    const systemPrompt = "Explain this MakeCode program to a beginner in Korean. Describe ONLY executable blocks actually used in this code, in their execution order. Output only a concise numbered list: usually 3–6 steps, at most 8. Each step is one short sentence; combine closely related actions. Do not add an introduction, glossary, conclusion, or mention concepts absent from the code. An anonymous event callback is NOT a user-defined function block: mention functions only when a named function is declared/called. Ignore commented-out code as behavior; do not invent initialization or actions. State the trigger, actual conditions, repeat counts, motor direction and duration when present. Convert milliseconds to seconds. A pause waits while the previous motor/light state continues; it does not itself stop motors. For Ponybot runNormal ONLY, Clockwise means left and CounterClockwise means right. Use Korean block concepts instead of JavaScript syntax or English enum names. You have source code, not an image: do not claim to see positions/colors, exact labels, successful conversion or actual hardware operation. If code is invalid, briefly identify the issue rather than confidently explaining intended behavior. Plain numbered text preferred; no Markdown headings.";
                     const explanation = await window.ComparisonLab.explain(generatedCode, systemPrompt);
                     setExplanationText(explanation);
                 } catch (error) {
@@ -621,8 +685,8 @@ ${memoryRule}
 
             return (
                 <div className="flex flex-col h-screen w-full bg-white text-[#111] overflow-hidden relative">
-                    <header className="flex justify-between items-center bg-black border-b border-[#333] px-6 py-3.5 shrink-0 z-50 shadow-md relative">
-                        <div className="flex items-center gap-3">
+                    <header className="studio-header flex justify-between items-center bg-black border-b border-[#333] px-6 py-3.5 shrink-0 z-50 shadow-md relative">
+                        <div className="studio-brand flex items-center gap-3">
                             <a href="https://boundaryx.io" target="_blank" rel="noreferrer" className="flex items-center transition-opacity hover:opacity-80">
                                 <img src="https://raw.githubusercontent.com/boundary-x/ai_voice_recognition/refs/heads/main/boundaryx_logo.png" alt="Boundary X Logo" className="h-6 w-auto" />
                             </a>
@@ -630,7 +694,7 @@ ${memoryRule}
                             <span className="text-white text-lg font-bold tracking-tight">바이브코딩 스튜디오</span>
                             
                             {/* 제품 선택 탭 */}
-                            <div className="ml-6 flex bg-[#222] p-1 rounded-lg">
+                            <div className="studio-products ml-6 flex bg-[#222] p-1 rounded-lg">
                                 <button 
                                     onClick={() => setProduct('ponybot')}
                                     className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${product === 'ponybot' ? 'bg-white text-black shadow-sm' : 'text-[#999] hover:text-white'}`}
@@ -662,8 +726,8 @@ ${memoryRule}
                         
                     </header>
 
-                    <main className="flex flex-1 overflow-hidden relative bg-[#F8F9FA]">
-                        <div className="w-[420px] flex flex-col border-r border-[#D1D5DB] bg-white relative z-10 shadow-sm">
+                    <main className={`studio-main ${showExplanation ? 'is-explaining' : ''} flex flex-1 overflow-hidden relative bg-[#F8F9FA]`}>
+                        <div className="chat-pane flex flex-col border-r border-[#D1D5DB] bg-white relative z-10 shadow-sm">
                             <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-hide bg-white">
                                 {messages.map((msg, idx) => (
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
@@ -727,8 +791,8 @@ ${memoryRule}
                             </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col overflow-hidden relative">
-                            <div className="h-16 bg-white border-b border-[#D1D5DB] flex items-center justify-between px-6 z-20">
+                        <div className="studio-workspace flex-1 flex flex-col overflow-hidden relative">
+                            <div className="studio-toolbar bg-white border-b border-[#D1D5DB] flex items-center justify-between px-6 z-20">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-black text-white p-1.5 px-2 rounded-lg shadow-sm">
                                         <i className="fa-solid fa-code"></i>
@@ -770,8 +834,8 @@ ${memoryRule}
                                 </div>
                             </div>
 
-                            <div className="flex-1 flex overflow-hidden relative p-6 gap-6">
-                                <div className={`transition-all duration-300 ${showExplanation ? 'w-[45%]' : 'w-full'} h-full relative rounded-2xl shadow-sm overflow-hidden border border-[#D1D5DB]`}>
+                            <div className="studio-content flex-1 flex overflow-hidden relative p-6 gap-6">
+                                <div className={`code-editor transition-all duration-300 ${showExplanation ? 'w-[45%]' : 'w-full'} h-full relative rounded-2xl shadow-sm overflow-hidden border border-[#D1D5DB]`}>
                                     <textarea
                                         value={generatedCode}
                                         onChange={(e) => setGeneratedCode(e.target.value)}
@@ -784,7 +848,7 @@ ${memoryRule}
                                 </div>
 
                                 {showExplanation && (
-                                    <div className="w-[55%] h-full bg-white rounded-2xl shadow-lg border border-[#D1D5DB] flex flex-col animate-fade-in overflow-hidden">
+                                    <div className="explanation-panel w-[55%] h-full bg-white rounded-2xl shadow-lg border border-[#D1D5DB] flex flex-col animate-fade-in overflow-hidden">
                                         <div className="p-5 border-b border-[#D1D5DB] flex justify-between items-center bg-[#F8F9FA]">
                                             <div className="flex items-center gap-2 text-[#111] font-bold">
                                                 <div className="p-1.5 bg-[#E6F4EA] rounded-md text-[#137333]">
@@ -792,7 +856,7 @@ ${memoryRule}
                                                 </div>
                                                 <span>블록과 코드 설명</span>
                                             </div>
-                                            <button onClick={() => setShowExplanation(false)} className="text-[#888] hover:text-[#000] transition-colors">
+                                            <button onClick={() => setShowExplanation(false)} className="text-sm text-[#555] hover:text-black whitespace-nowrap" aria-label="설명 닫고 코드로 돌아가기">코드로 돌아가기
                                                 <i className="fa-solid fa-xmark text-lg"></i>
                                             </button>
                                         </div>
@@ -806,7 +870,7 @@ ${memoryRule}
                                                     <span className="font-medium animate-pulse">코드를 꼼꼼히 분석 중이에요...</span>
                                                 </div>
                                             ) : (
-                                                <div className="whitespace-pre-wrap font-medium">{explanationText}</div>
+                                                <div className="font-medium"><ExplanationText text={explanationText} /></div>
                                             )}
                                         </div>
                                     </div>
@@ -815,7 +879,7 @@ ${memoryRule}
                         </div>
                     </main>
 
-                    <footer className="bg-black text-white px-8 py-5 border-t border-[#222] shrink-0 text-xs flex justify-between items-center z-50">
+                    <footer className="studio-footer bg-black text-white px-8 py-5 border-t border-[#222] shrink-0 text-xs flex justify-between items-center z-50">
                         <div className="flex flex-col gap-1.5">
                             <strong className="text-sm font-bold tracking-tight">바운더리엑스 (Boundary X)</strong>
                             <span className="text-[#999] font-normal">"미래 기술을 교실의 책상 위로 옮기는 에듀테크 기업"</span>
@@ -947,7 +1011,7 @@ async function runProvider(provider, settings, input, fetcher = fetch) {
   };
   const ready = Promise.resolve();
   const bar = el('div', undefined, 'lab-bar');
-  bar.append(el('strong', 'TEST · 블록 이미지 v2'), el('span', '코드 생성: 두 모델 비교 · 블록 이미지: API 키 없이 확인'));
+  bar.append(el('strong', 'TEST · 블록 설명 v3'), el('span', '코드 생성: 두 모델 비교 · 블록 이미지: API 키 없이 확인'));
   bar.append(button('API 키 입력', keyDialog), button('비교 기록', showHistory), button('결과 내려받기', download));
   document.body.append(bar);
   function download() {
