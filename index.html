@@ -70,34 +70,34 @@
         ::selection { background: #000; color: #fff; }
     
 /* Block explanation: preserve readable space on side panels and mobile. */
-.studio-main,.studio-workspace,.studio-content,.explanation-panel {min-width:0;min-height:0}
-.chat-pane {width:clamp(280px,30vw,380px);flex-shrink:0}
-.studio-toolbar {height:auto;min-height:64px;gap:12px;flex-wrap:wrap;padding:12px 20px}
-.studio-toolbar button {white-space:nowrap;flex-shrink:0}
-.explanation-text {overflow-wrap:anywhere}
-.explanation-text code {background:#f1f3f4;border-radius:4px;padding:1px 4px;font-size:.9em}
+#root .studio-main,#root .studio-workspace,#root .studio-content,#root .explanation-panel {min-width:0;min-height:0}
+#root .chat-pane {width:clamp(280px,30vw,380px);flex-shrink:0}
+#root .studio-toolbar {height:auto;min-height:64px;gap:12px;flex-wrap:wrap;padding:12px 20px}
+#root .studio-toolbar button {white-space:nowrap;flex-shrink:0}
+#root .explanation-text {overflow-wrap:anywhere}
+#root .explanation-text code {background:#f1f3f4;border-radius:4px;padding:1px 4px;font-size:.9em}
 @media(max-width:1100px) {
- .studio-main.is-explaining .chat-pane,.studio-main.is-explaining .code-editor {display:none}
- .studio-main.is-explaining .explanation-panel {width:100%}
- .studio-content {padding:16px;gap:16px}
- .studio-header {gap:12px;flex-wrap:wrap}
- .studio-brand {flex-wrap:wrap;gap:10px}
- .studio-products {margin-left:0}
- .studio-footer {padding:10px 16px}
- .studio-footer > div:last-child {display:none}
+ #root .studio-main.is-explaining .chat-pane,#root .studio-main.is-explaining .code-editor {display:none}
+ #root .studio-main.is-explaining .explanation-panel {width:100%}
+ #root .studio-content {padding:16px;gap:16px}
+ #root .studio-header {gap:12px;flex-wrap:wrap}
+ #root .studio-brand {flex-wrap:wrap;gap:10px}
+ #root .studio-products {margin-left:0}
+ #root .studio-footer {padding:10px 16px}
+ #root .studio-footer > div:last-child {display:none}
 }
 @media(max-width:640px) {
- .studio-main {flex-direction:column}
- .chat-pane {width:100%;height:42%;border-right:0;border-bottom:1px solid #d1d5db}
- .studio-main.is-explaining .studio-workspace {height:100%}
- .studio-header {padding:10px 12px}
- .studio-brand > span {font-size:14px}
- .studio-brand img {height:20px}
- .studio-toolbar {padding:10px 12px}
- .studio-toolbar > div:last-child {gap:8px;flex-wrap:wrap}
- .studio-toolbar button {padding:8px 10px;width:auto}
- .studio-content {padding:10px}
- .studio-footer {display:none}
+ #root .studio-main {flex-direction:column}
+ #root .chat-pane {width:100%;height:42%;border-right:0;border-bottom:1px solid #d1d5db}
+ #root .studio-main.is-explaining .studio-workspace {height:100%}
+ #root .studio-header {padding:10px 12px}
+ #root .studio-brand > span {font-size:14px}
+ #root .studio-brand img {height:20px}
+ #root .studio-toolbar {padding:10px 12px}
+ #root .studio-toolbar > div:last-child {gap:8px;flex-wrap:wrap}
+ #root .studio-toolbar button {padding:8px 10px;width:auto}
+ #root .studio-content {padding:10px}
+ #root .studio-footer {display:none}
 }
 
 </style>
